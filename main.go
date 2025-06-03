@@ -8,7 +8,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
 	"net/http"
+	"os"
 )
 
 var collection *mongo.Collection
@@ -19,6 +21,7 @@ func main() {
 	initMongoDB()
 
 	r := gin.Default()
+	r.Use(CORSMiddleware())
 
 	r.GET("/", test)
 	r.POST("/spv", createDocument)
@@ -26,8 +29,30 @@ func main() {
 	r.GET("/spv", getAllDocuments)
 	r.GET("/spv/:id", getDocumentByID)
 
-	r.Run(":8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	if err := r.Run(":" + port); err != nil {
+		log.Panicf("error: %s", err)
+	}
 
+}
+
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
 }
 
 func initMongoDB() {

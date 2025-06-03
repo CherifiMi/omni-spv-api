@@ -36,7 +36,6 @@ func main() {
 	if err := r.Run(":" + port); err != nil {
 		log.Panicf("error: %s", err)
 	}
-
 }
 
 func CORSMiddleware() gin.HandlerFunc {

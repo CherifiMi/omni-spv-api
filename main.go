@@ -93,6 +93,31 @@ func createDocument(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// You must ensure there's an `_id` or other unique key to match on
+	id, ok := doc["_id"]
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing _id field for upsert"})
+		return
+	}
+
+	filter := bson.M{"_id": id}
+	opts := options.Replace().SetUpsert(true)
+
+	result, err := collection.ReplaceOne(context.Background(), filter, doc, opts)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Upsert failed"})
+		return
+	}
+	c.JSON(http.StatusOK, result)
+}
+
+func createDocument_without_replacing(c *gin.Context) {
+	var doc Document
+	if err := c.ShouldBindJSON(&doc); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	result, err := collection.InsertOne(context.Background(), doc)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Insertion failed"})
